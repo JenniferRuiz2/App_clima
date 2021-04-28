@@ -6,16 +6,45 @@
 //
 
 import UIKit
+import CoreLocation
 
-class ClimaViewController: UIViewController, UITextFieldDelegate, ClimaManagerDelegado {
+class ClimaViewController: UIViewController, UITextFieldDelegate, ClimaManagerDelegado, CLLocationManagerDelegate {
+    
+    var latitud: CLLocationDegrees?
+    var longitud: CLLocationDegrees?
+    
+    func huboError(erro: Error) {
+        print(erro.localizedDescription)
+        DispatchQueue.main.async {
+            let alerta = UIAlertController(title: "ERROR", message: "Lugar no encontrado", preferredStyle: .actionSheet)
+            
+            let accionOK = UIAlertAction(title: "Aceptar", style: .default, handler: nil)
+            
+            alerta.addAction(accionOK)
+            
+            self.present(alerta, animated: true, completion: nil)
+        }
+    }
+    
 
     var climaManager = ClimaManager()
+    //ayudar a obtener las coordenasdas o ubicación del usuario
+    var climaLocationManager = CLLocationManager()
+    
     @IBOutlet weak var buscarTextField: UITextField!
     @IBOutlet weak var condicionClimaImageView: UIImageView!
     @IBOutlet weak var temperaturaLabel: UILabel!
     @IBOutlet weak var ciudadLabel: UILabel!
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        climaLocationManager.delegate = self
+        
+        //solicitar el permiso del usuario para acceder a la ubicación
+        climaLocationManager.requestWhenInUseAuthorization()
+        
+        //rastrear la ubicacción en todo momento
+        climaLocationManager.requestLocation()
         
         //Establecer esta clase como delegado del ClimaManager
         climaManager.delegado = self
@@ -31,6 +60,9 @@ class ClimaViewController: UIViewController, UITextFieldDelegate, ClimaManagerDe
         //ciudadLabel.text = buscarTextField.text
     }
     
+    @IBAction func GPSButton(_ sender: UIButton) {
+        climaManager.buscarClimaGPS(lat: latitud! , lon: longitud!)
+    }
     //MARK:Métodos del delegado
     
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -63,5 +95,23 @@ class ClimaViewController: UIViewController, UITextFieldDelegate, ClimaManagerDe
             self.ciudadLabel.text = clima.nombreCiudad
             self.condicionClimaImageView.image = UIImage(systemName: clima.condicionClima)
         }
+    }
+    
+    //MARK: Métodos de ubicación
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        if let ubicacion = locations.last{
+            let latitud = ubicacion.coordinate.latitude
+            let longitud = ubicacion.coordinate.longitude
+            self.latitud = latitud
+            self.longitud = longitud
+            print("Se obtuvo la ubicacion lat: \(latitud) long: \(longitud)")
+            climaManager.buscarClimaGPS(lat: latitud, lon: longitud)
+        }
+        
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        print("Error al obtener la ubicación")
     }
 }

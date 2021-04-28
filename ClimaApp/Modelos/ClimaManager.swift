@@ -6,9 +6,12 @@
 //
 
 import Foundation
+import CoreLocation
 
 protocol ClimaManagerDelegado {
     func actualizarClima(clima: ClimaModelo)
+    
+    func huboError(erro: Error)
 }
 
 struct ClimaManager {
@@ -22,7 +25,7 @@ struct ClimaManager {
         realizarSolicitud(urlString: urlString)
     }
     
-    func buscarClimaGPS(lat: Double, lon: Double){
+    func buscarClimaGPS(lat: CLLocationDegrees, lon: CLLocationDegrees){
         let urlString = "\(climaURL)&lat=\(lat)&lon=\(lon)"
         realizarSolicitud(urlString: urlString)
     }
@@ -35,7 +38,7 @@ struct ClimaManager {
             //3.- Asignarle una tarea a la URLSession
             let tarea = session.dataTask(with: url) { (datos, respuesta, error) in
                 if error != nil {
-                    print("Error al optener los datos: \(error!)")
+                    delegado?.huboError(erro: error!)
                     return
                 }
                 if let datosSeguros = datos {
@@ -70,7 +73,7 @@ struct ClimaManager {
             print(objClima.tempString)
             return objClima
         } catch  {
-            print("Error al decodificar los datos:  \(error.localizedDescription)")
+            delegado?.huboError(erro: error)
             return nil
         }
     }
